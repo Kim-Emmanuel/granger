@@ -19,7 +19,6 @@
 - [Generative AI Integration](#-generative-ai-integration)
 - [Animation Strategy](#-animation-strategy)
 - [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
 - [Design System](#-design-system)
 
 ---
@@ -47,7 +46,7 @@
 This project is built using a modern frontend architecture focusing on performance and type safety.
 
 - **Framework**: **React 19** with **TypeScript**.
-- **Styling**: **Tailwind CSS** for utility-first styling, utilizing extensive `group-hover` and `dark:` modifiers for state management.
+- **Styling**: **Tailwind CSS** (via CDN for preview) for utility-first styling, utilizing extensive `group-hover` and `dark:` modifiers.
 - **Animation Engine**: **GSAP (GreenSock)**. We utilize `ScrollTrigger` for viewport-based interactions and `Tween` for micro-interactions.
 - **Icons**: **Lucide React** for consistent, lightweight SVG iconography.
 - **AI SDK**: **@google/genai** for direct communication with Google's LLMs.
@@ -94,8 +93,6 @@ const prompt = `You are an intense elite sports coach. Give me a single, short, 
 │   └── SplashScreen.tsx   # Initial load sequence
 ├── services/
 │   └── geminiService.ts   # AI API abstraction
-├── contexts/
-│   └── AnimationContext.tsx # (Optional) Global animation state
 ├── types.ts               # TypeScript interfaces
 ├── App.tsx                # Layout composition
 ├── index.tsx              # Entry point
@@ -104,28 +101,24 @@ const prompt = `You are an intense elite sports coach. Give me a single, short, 
 
 ---
 
-## 🛠 Getting Started (Local Development)
+## 🛠 Getting Started
 
-This project comes configured with **Vite** and **Tailwind CSS** for a robust local development experience.
-
-1.  **Clone/Download the repository**
+1.  **Clone the repository**
 2.  **Install dependencies**:
     ```bash
     npm install
     ```
 3.  **Environment Setup**:
-    Create a `.env` file in the root and add your Gemini API key:
+    Create a `.env` file in the root and add your Gemini API key (Note: In this demo environment, `process.env.API_KEY` is injected automatically).
     ```env
-    VITE_API_KEY=your_google_genai_api_key
+    API_KEY=your_google_genai_api_key
     ```
-    *(Note: You may need to update `services/geminiService.ts` to use `import.meta.env.VITE_API_KEY` depending on your specific local setup).*
-4.  **Modify Entry Points**:
-    - In `index.tsx`: Add `import './index.css';` at the top.
-    - In `index.html`: Remove the Tailwind CDN script and the `<style>` block.
-5.  **Run Development Server**:
+4.  **Run Development Server**:
     ```bash
-    npm run dev
+    npm start
     ```
+
+---
 
 ---
 
