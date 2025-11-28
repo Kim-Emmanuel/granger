@@ -104,21 +104,27 @@ const prompt = `You are an intense elite sports coach. Give me a single, short, 
 
 ---
 
-## 🛠 Getting Started
+## 🛠 Getting Started (Local Development)
 
-1.  **Clone the repository**
+This project comes configured with **Vite** and **Tailwind CSS** for a robust local development experience.
+
+1.  **Clone/Download the repository**
 2.  **Install dependencies**:
     ```bash
     npm install
     ```
 3.  **Environment Setup**:
-    Create a `.env` file in the root and add your Gemini API key (Note: In this demo environment, `process.env.API_KEY` is injected automatically).
+    Create a `.env` file in the root and add your Gemini API key:
     ```env
-    API_KEY=your_google_genai_api_key
+    VITE_API_KEY=your_google_genai_api_key
     ```
-4.  **Run Development Server**:
+    *(Note: You may need to update `services/geminiService.ts` to use `import.meta.env.VITE_API_KEY` depending on your specific local setup).*
+4.  **Modify Entry Points**:
+    - In `index.tsx`: Add `import './index.css';` at the top.
+    - In `index.html`: Remove the Tailwind CDN script and the `<style>` block.
+5.  **Run Development Server**:
     ```bash
-    npm start
+    npm run dev
     ```
 
 ---
