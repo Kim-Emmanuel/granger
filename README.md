@@ -78,35 +78,10 @@ const prompt = `You are an intense elite sports coach. Give me a single, short, 
 
 ---
 
-## 🎬 Animation Strategy
-
-We prioritize **performance** by animating `transform` and `opacity` properties almost exclusively.
-
-- **Staggered Entrances**: Elements (cards, list items) enter the viewport with a `stagger` delay, creating a fluid, cascading effect.
-- **Scroll Scrubbing**: The Footer brand text and Hero background elements move in sync with scroll position (`scrub: true`), adding depth.
-- **Micro-interactions**: Buttons and cards utilize `scale` and `brightness` filters on hover to create tactile feedback.
-
-**Code Snippet (Staggered Entrance):**
-```typescript
-gsap.from(".program-card", {
-  scale: 0.9,
-  opacity: 0,
-  duration: 1,
-  stagger: 0.15,
-  ease: "power3.out",
-  scrollTrigger: {
-      trigger: sliderRef.current,
-      start: "top 85%",
-  }
-});
-```
-
----
-
 ## 📂 Project Structure
 
 ```
-src/
+/
 ├── components/
 │   ├── Features.tsx       # AI Challenge & Benefits grid
 │   ├── Program.tsx        # Complex slider with filtering
@@ -119,10 +94,12 @@ src/
 │   └── SplashScreen.tsx   # Initial load sequence
 ├── services/
 │   └── geminiService.ts   # AI API abstraction
+├── contexts/
+│   └── AnimationContext.tsx # (Optional) Global animation state
 ├── types.ts               # TypeScript interfaces
 ├── App.tsx                # Layout composition
 ├── index.tsx              # Entry point
-└── index.css              # Global styles & Tailwind directives
+└── index.html             # HTML entry & Styles
 ```
 
 ---
