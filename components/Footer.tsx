@@ -1,14 +1,19 @@
 
-import React, { useLayoutEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useEffect } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { trackSectionView, trackEvent } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export const Footer: React.FC = () => {
   const container = useRef(null);
   const textRef = useRef(null);
+
+  useEffect(() => {
+    trackSectionView('Footer');
+  }, []);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -43,11 +48,15 @@ export const Footer: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
+  const handleLinkClick = (label: string) => {
+    trackEvent('Footer Click', { label });
+  }
+
   return (
     <footer ref={container} className="bg-[#f3f4f6] dark:bg-zinc-950 pt-24 pb-8 px-6 md:px-10 transition-colors duration-300">
        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-24">
           <div className="md:col-span-5">
-             <div className="relative rounded-4xl overflow-hidden aspect-square md:aspect-[4/3] bg-gray-900 group cursor-pointer shadow-2xl">
+             <div onClick={() => handleLinkClick('Explore Card')} className="relative rounded-4xl overflow-hidden aspect-square md:aspect-[4/3] bg-gray-900 group cursor-pointer shadow-2xl">
                 <img 
                   src="https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=1000&auto=format&fit=crop" 
                   className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition duration-700 group-hover:scale-105"
@@ -76,18 +85,18 @@ export const Footer: React.FC = () => {
              <div className="grid grid-cols-2 md:grid-cols-3 gap-10 mt-16 md:mt-20 text-sm text-gray-500 dark:text-gray-400">
                 <div className="flex flex-col gap-4">
                    <span className="font-bold text-black dark:text-white mb-2 md:mb-4 uppercase tracking-wider text-[10px]">Program</span>
-                   <a href="#" className="hover:text-brand-orange transition-colors">Product</a>
-                   <a href="#" className="hover:text-brand-orange transition-colors">Event</a>
-                   <a href="#" className="hover:text-brand-orange transition-colors">About</a>
+                   <a href="#" onClick={() => handleLinkClick('Product')} className="hover:text-brand-orange transition-colors">Product</a>
+                   <a href="#" onClick={() => handleLinkClick('Event')} className="hover:text-brand-orange transition-colors">Event</a>
+                   <a href="#" onClick={() => handleLinkClick('About')} className="hover:text-brand-orange transition-colors">About</a>
                 </div>
                 <div className="flex flex-col gap-4">
                    <span className="font-bold text-black dark:text-white mb-2 md:mb-4 uppercase tracking-wider text-[10px]">Social</span>
-                   <a href="#" className="hover:text-brand-orange transition-colors flex items-center gap-2">X (Twitter) <ArrowUpRight size={10}/></a>
-                   <a href="#" className="hover:text-brand-orange transition-colors flex items-center gap-2">Instagram <ArrowUpRight size={10}/></a>
-                   <a href="#" className="hover:text-brand-orange transition-colors flex items-center gap-2">LinkedIn <ArrowUpRight size={10}/></a>
+                   <a href="#" onClick={() => handleLinkClick('Twitter')} className="hover:text-brand-orange transition-colors flex items-center gap-2">X (Twitter) <ArrowUpRight size={10}/></a>
+                   <a href="#" onClick={() => handleLinkClick('Instagram')} className="hover:text-brand-orange transition-colors flex items-center gap-2">Instagram <ArrowUpRight size={10}/></a>
+                   <a href="#" onClick={() => handleLinkClick('LinkedIn')} className="hover:text-brand-orange transition-colors flex items-center gap-2">LinkedIn <ArrowUpRight size={10}/></a>
                 </div>
                 <div className="flex items-end justify-start md:justify-end">
-                   <button className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-brand-orange flex items-center justify-center text-white hover:scale-110 transition-transform duration-300 shadow-2xl shadow-brand-orange/40">
+                   <button onClick={() => handleLinkClick('Contact Button')} className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-brand-orange flex items-center justify-center text-white hover:scale-110 transition-transform duration-300 shadow-2xl shadow-brand-orange/40">
                       <ArrowUpRight size={32} />
                    </button>
                 </div>
@@ -98,7 +107,7 @@ export const Footer: React.FC = () => {
        <div className="border-t border-gray-200 dark:border-zinc-800 pt-10 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-10 gap-6">
           <div>San Diego - California</div>
           <div>EST — 2018</div>
-          <div className="hover:text-brand-orange cursor-pointer transition-colors">hello@granger.com</div>
+          <div className="hover:text-brand-orange cursor-pointer transition-colors" onClick={() => handleLinkClick('Email')}>hello@granger.com</div>
        </div>
 
        <div className="relative w-full overflow-hidden">
@@ -109,8 +118,8 @@ export const Footer: React.FC = () => {
        
        <div className="flex flex-col md:flex-row justify-between text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-widest pb-6 gap-4 md:gap-0">
           <div className="flex gap-6">
-            <div className="hover:text-black dark:hover:text-white transition-colors cursor-pointer">Website Attachment</div>
-            <div className="hover:text-black dark:hover:text-white transition-colors cursor-pointer">Resources</div>
+            <div onClick={() => handleLinkClick('Attachment')} className="hover:text-black dark:hover:text-white transition-colors cursor-pointer">Website Attachment</div>
+            <div onClick={() => handleLinkClick('Resources')} className="hover:text-black dark:hover:text-white transition-colors cursor-pointer">Resources</div>
           </div>
           <div>©2025 All Right Reserved</div>
        </div>

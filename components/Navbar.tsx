@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { NavLink } from '../types';
-import { Sun, Moon, Menu, ShoppingBag, X, User } from 'lucide-react';
+import { Sun, Moon, Menu, ShoppingBag, X, User, Shield } from 'lucide-react';
 import { gsap } from 'gsap';
+import { trackEvent } from '../services/analyticsService';
 
 const links: NavLink[] = [
   { label: 'Program', href: '#' },
@@ -14,9 +15,10 @@ const links: NavLink[] = [
 interface NavbarProps {
   isDark: boolean;
   toggleTheme: () => void;
+  onEnterAdmin: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme }) => {
+export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, onEnterAdmin }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -30,20 +32,30 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme }) => {
     if (isMenuOpen) {
       gsap.to(".mobile-menu", { x: 0, duration: 0.5, ease: "power3.out" });
       gsap.from(".mobile-link", { y: 20, opacity: 0, stagger: 0.1, delay: 0.2 });
+      trackEvent('Mobile Menu', { action: 'Open' });
     } else {
       gsap.to(".mobile-menu", { x: "100%", duration: 0.5, ease: "power3.in" });
     }
   }, [isMenuOpen]);
+
+  const handleLinkClick = (label: string) => {
+    trackEvent('Navigation Click', { label });
+  }
+
+  const handleThemeToggle = () => {
+      toggleTheme();
+      trackEvent('Theme Toggle', { to: !isDark ? 'Dark' : 'Light' });
+  }
 
   return (
     <>
       <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/5 backdrop-blur-sm dark:bg-black/5 py-4' : 'bg-transparent py-6 md:py-8'} text-white mix-blend-difference pointer-events-none`}>
         <div className="max-w-[1800px] mx-auto px-6 md:px-10 w-full flex justify-between items-center">
             <div className="pointer-events-auto flex items-center gap-12 md:gap-16">
-            <div className="text-2xl md:text-3xl font-black tracking-tighter uppercase cursor-pointer select-none font-sans hover:scale-105 transition-transform origin-left">Granger</div>
+            <div className="text-2xl md:text-3xl font-black tracking-tighter uppercase cursor-pointer select-none font-sans hover:scale-105 transition-transform origin-left" onClick={() => handleLinkClick('Logo')}>Granger</div>
             <ul className="hidden md:flex gap-8 text-[11px] font-bold tracking-widest uppercase">
                 {links.map((link) => (
-                <li key={link.label} className="relative group cursor-pointer flex items-center">
+                <li key={link.label} className="relative group cursor-pointer flex items-center" onClick={() => handleLinkClick(link.label)}>
                     <span className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                     {link.label}
                     </span>
@@ -62,20 +74,33 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme }) => {
             </div>
 
             <div className="pointer-events-auto flex items-center gap-4 md:gap-8 text-[10px] font-bold uppercase tracking-widest">
-            <span className="hidden lg:block cursor-pointer hover:bg-white/10 transition-colors border border-white/20 px-6 py-3 rounded-full backdrop-blur-md bg-white/5 whitespace-nowrap">Custom Wellness</span>
-            <span className="hidden md:block lg:hidden cursor-pointer hover:text-brand-orange transition-colors whitespace-nowrap">Get in Touch</span>
+            <span onClick={() => handleLinkClick('Custom Wellness')} className="hidden lg:block cursor-pointer hover:bg-white/10 transition-colors border border-white/20 px-6 py-3 rounded-full backdrop-blur-md bg-white/5 whitespace-nowrap">Custom Wellness</span>
+            <button 
+                onClick={() => { onEnterAdmin(); trackEvent('Admin Access', { source: 'Navbar' }); }}
+                className="hidden md:flex items-center gap-2 cursor-pointer hover:text-brand-orange transition-colors whitespace-nowrap"
+            >
+                <Shield size={12} /> Admin
+            </button>
             
             <div className="flex items-center gap-4 md:pl-8 md:border-l border-white/20 h-8">
-                <button className="hidden md:flex hover:opacity-70 transition-opacity hover:scale-110 duration-200" aria-label="Shopping Bag">
+                <button 
+                    className="hidden md:flex hover:opacity-70 transition-opacity hover:scale-110 duration-200" 
+                    aria-label="Shopping Bag"
+                    onClick={() => trackEvent('Cart Click')}
+                >
                     <ShoppingBag size={20} />
                 </button>
                 
-                <button className="hidden md:flex hover:opacity-70 transition-opacity hover:scale-110 duration-200" aria-label="Login">
+                <button 
+                    className="hidden md:flex hover:opacity-70 transition-opacity hover:scale-110 duration-200" 
+                    aria-label="Login"
+                    onClick={() => trackEvent('Profile Click')}
+                >
                     <User size={20} />
                 </button>
 
                 <button 
-                    onClick={toggleTheme}
+                    onClick={handleThemeToggle}
                     className="w-14 h-8 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 relative flex items-center p-1 transition-all duration-300 hover:bg-white/20 shadow-inner group overflow-hidden"
                     aria-label="Toggle Dark Mode"
                 >
@@ -108,11 +133,19 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme }) => {
          </div>
          <div className="flex-1 flex flex-col justify-center items-center gap-8 p-10">
             {links.map((link) => (
-              <a key={link.label} href={link.href} onClick={() => setIsMenuOpen(false)} className="mobile-link text-3xl font-bold uppercase tracking-wide hover:text-brand-orange transition-colors flex items-center gap-3">
+              <a 
+                key={link.label} 
+                href={link.href} 
+                onClick={() => { setIsMenuOpen(false); handleLinkClick(link.label); }} 
+                className="mobile-link text-3xl font-bold uppercase tracking-wide hover:text-brand-orange transition-colors flex items-center gap-3"
+              >
                  {link.label}
                  {link.isNew && <span className="bg-brand-orange text-xs px-2 py-1 rounded text-white font-black tracking-wider animate-pulse">NEW</span>}
               </a>
             ))}
+            <button onClick={() => { setIsMenuOpen(false); onEnterAdmin(); trackEvent('Admin Access', { source: 'Mobile Menu' }); }} className="mobile-link mt-4 text-xl font-bold uppercase tracking-wide text-gray-400 hover:text-white flex items-center gap-2">
+               <Shield size={20} /> Admin Dashboard
+            </button>
             <a href="#" className="mobile-link mt-8 px-8 py-4 bg-white text-black rounded-full font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors">
               Custom Wellness
             </a>

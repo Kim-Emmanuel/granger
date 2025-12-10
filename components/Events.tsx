@@ -4,92 +4,32 @@ import { EventItem } from '../types';
 import { ArrowUpRight, Zap, MapPin, Ticket, ArrowRight, Trophy } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { trackEvent } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Extended Event Interface for this component
-interface ExtendedEventItem extends EventItem {
-  date: string;
-  time: string;
-  location: string;
-  spotsLeft: number;
-  totalSpots: number;
-  price: string;
+interface EventsProps {
+    events: EventItem[];
 }
 
-const events: ExtendedEventItem[] = [
-  { 
-      id: 1, 
-      title: 'Online Fitness Challenge', 
-      category: 'Virtual', 
-      image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1000&auto=format&fit=crop',
-      tags: ['Global Access', 'Free Entry'],
-      date: 'OCT 24',
-      time: '10:00 AM',
-      location: 'Zoom / App',
-      spotsLeft: 450,
-      totalSpots: 1000,
-      price: "Free"
-  },
-  { 
-      id: 2, 
-      title: 'Youth Sports Camp - 20yo', 
-      category: 'Community', 
-      image: 'https://images.unsplash.com/photo-1530915518997-64662adc2471?q=80&w=1000&auto=format&fit=crop',
-      tags: ['Coach & Trainer', 'Solid Community', 'Team Uniform'],
-      date: 'NOV 02',
-      time: '08:00 AM',
-      location: 'San Diego, CA',
-      spotsLeft: 12,
-      totalSpots: 50,
-      price: "$45.00"
-  },
-  { 
-      id: 3, 
-      title: 'Obstacle Course Race', 
-      category: 'Physical', 
-      image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=1000&auto=format&fit=crop',
-      tags: ['Outdoor', 'High Intensity'],
-      date: 'NOV 15',
-      time: '07:30 AM',
-      location: 'Mud Creek Park',
-      spotsLeft: 85,
-      totalSpots: 200,
-      price: "$89.00"
-  },
-  { 
-      id: 4, 
-      title: 'Sport x Game Day', 
-      category: 'Hybrid', 
-      image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1000&auto=format&fit=crop',
-      tags: ['Fun', 'Family'],
-      date: 'DEC 10',
-      time: '01:00 PM',
-      location: 'City Stadium',
-      spotsLeft: 20,
-      totalSpots: 500,
-      price: "$25.00"
-  },
-  { 
-      id: 5, 
-      title: 'Trainer Meet & Greet', 
-      category: 'Social', 
-      image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=1000&auto=format&fit=crop',
-      tags: ['Networking', 'Pro Tips'],
-      date: 'JAN 05',
-      time: '06:00 PM',
-      location: 'The Grand Hall',
-      spotsLeft: 5,
-      totalSpots: 30,
-      price: "$150.00"
-  },
-];
-
-export const Events: React.FC = () => {
-  const [activeEvent, setActiveEvent] = useState<ExtendedEventItem>(events[1]);
+export const Events: React.FC<EventsProps> = ({ events }) => {
+  const [activeEvent, setActiveEvent] = useState<EventItem | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Set initial active event safely
+  useEffect(() => {
+    if (events.length > 0 && !activeEvent) {
+        setActiveEvent(events[1] || events[0]);
+    }
+  }, [events]);
+
+  const handleBookNow = (e: React.MouseEvent, event: EventItem) => {
+      e.stopPropagation();
+      trackEvent('Conversion', { type: 'Event Booking', event: event.title });
+      alert(`Booking initiated for ${event.title}`);
+  }
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -139,6 +79,8 @@ export const Events: React.FC = () => {
     }
   }, [activeEvent]);
 
+  if (!activeEvent) return null;
+
   return (
     <section ref={containerRef} className="px-4 md:px-10 mb-8 max-w-[1800px] mx-auto">
       <div className="bg-[#0f0f11] text-white py-16 md:py-24 px-6 md:px-16 rounded-[2.5rem] overflow-hidden relative min-h-[auto] md:min-h-[900px]">
@@ -177,7 +119,12 @@ export const Events: React.FC = () => {
                     <div 
                         key={event.id}
                         title={event.title}
-                        onMouseEnter={() => setActiveEvent(event)}
+                        onMouseEnter={() => {
+                            if (activeEvent.id !== event.id) {
+                                setActiveEvent(event);
+                                trackEvent('Event Hover', { event: event.title });
+                            }
+                        }}
                         className={`event-item group relative cursor-pointer border-t border-white/10 transition-all duration-500 overflow-hidden ${isActive ? 'py-8 md:py-10 bg-brand-orange -mx-6 px-6 rounded-3xl border-transparent shadow-2xl' : 'py-6 md:py-8 opacity-60 hover:opacity-100'}`}
                     >
                         <div className="flex items-start gap-6 md:gap-8 relative z-10">
@@ -225,7 +172,10 @@ export const Events: React.FC = () => {
                                                      </div>
                                                  </div>
                                             </div>
-                                            <button className="bg-white text-brand-orange px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-brand-dark hover:text-white transition-colors flex items-center gap-2 shadow-lg">
+                                            <button 
+                                                onClick={(e) => handleBookNow(e, event)}
+                                                className="bg-white text-brand-orange px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-brand-dark hover:text-white transition-colors flex items-center gap-2 shadow-lg"
+                                            >
                                                 Book Now <Ticket size={14} />
                                             </button>
                                         </div>
@@ -283,7 +233,10 @@ export const Events: React.FC = () => {
                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Entry</span>
                                        <span className="text-sm font-bold text-white flex items-center gap-1">{activeEvent.price}</span>
                                    </div>
-                                   <button className="w-14 h-14 bg-brand-orange rounded-full flex items-center justify-center text-white shadow-lg shadow-brand-orange/30 hover:scale-110 transition-transform hover:bg-white hover:text-brand-orange">
+                                   <button 
+                                        onClick={(e) => handleBookNow(e, activeEvent)}
+                                        className="w-14 h-14 bg-brand-orange rounded-full flex items-center justify-center text-white shadow-lg shadow-brand-orange/30 hover:scale-110 transition-transform hover:bg-white hover:text-brand-orange"
+                                   >
                                        <ArrowRight size={24} />
                                    </button>
                                </div>

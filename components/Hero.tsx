@@ -3,6 +3,7 @@ import React, { useLayoutEffect, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Crown } from 'lucide-react';
+import { trackSectionView } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -16,6 +17,11 @@ export const Hero: React.FC<HeroProps> = ({ startAnimation = true }) => {
   const textWrapperRef = useRef<HTMLDivElement>(null);
   const ballRef = useRef<HTMLImageElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Track when this section is mounted
+    trackSectionView('Hero');
+  }, []);
 
   useLayoutEffect(() => {
     // Only set up initial states here, actual animation triggers via prop

@@ -1,10 +1,11 @@
 
-import React, { useState, useLayoutEffect, useRef } from 'react';
+import React, { useState, useLayoutEffect, useRef, useEffect } from 'react';
 import { ActivityStat } from '../types';
 import { getFitnessAdvice } from '../services/geminiService';
 import { Activity, Flame, Heart, Zap, Sparkles, ArrowRight, Dumbbell } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { trackSectionView, trackEvent } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -21,6 +22,10 @@ export const Tracking: React.FC = () => {
   const imageRef = useRef<HTMLImageElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const chartPathRef = useRef<SVGPathElement>(null);
+
+  useEffect(() => {
+    trackSectionView('Tracking');
+  }, []);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -82,6 +87,7 @@ export const Tracking: React.FC = () => {
   }, []);
 
   const handleGetAdvice = async () => {
+    trackEvent('AI Advice', { action: 'Generate' });
     setLoading(true);
     const result = await getFitnessAdvice(stats);
     setAdvice(result);
@@ -158,7 +164,11 @@ export const Tracking: React.FC = () => {
 
               <div className="flex justify-between gap-2 md:gap-4 pt-6 border-t border-gray-100 dark:border-zinc-800/50">
                  {stats.map((stat) => (
-                    <div key={stat.label} className="text-center flex-1 group/stat cursor-default">
+                    <div 
+                        key={stat.label} 
+                        className="text-center flex-1 group/stat cursor-default"
+                        onMouseEnter={() => trackEvent('Hover Stat', { label: stat.label })}
+                    >
                        <div className={`w-2 h-2 ${stat.color} rounded-full mx-auto mb-3 shadow-[0_0_8px_currentColor] group-hover/stat:scale-150 transition-transform`}></div>
                        <div className="text-[8px] md:text-[9px] text-gray-400 uppercase font-bold tracking-widest mb-1">{stat.label}</div>
                        <div className="text-xs md:text-sm font-bold dark:text-white text-slate-800">{stat.value} <span className="text-[9px] font-normal text-gray-400">{stat.unit}</span></div>

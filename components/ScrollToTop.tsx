@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { gsap } from 'gsap';
+import { trackEvent } from '../services/analyticsService';
 
 export const ScrollToTop: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -116,6 +117,7 @@ export const ScrollToTop: React.FC = () => {
   };
 
   const scrollToTop = () => {
+    trackEvent('Scroll To Top', { action: 'Click' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

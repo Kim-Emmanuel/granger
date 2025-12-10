@@ -3,61 +3,17 @@ import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from
 import { Star, ArrowUpRight, ArrowRight, Quote, ArrowLeft, Users } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { TestimonialItem, SessionItem } from '../types';
+import { trackSectionView, trackEvent } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const testimonials = [
-  {
-    id: 1,
-    text: "The activity tracker keeps me on track, and the community pushes me to keep going. It’s the perfect mix of fun and fitness.",
-    author: "Benedeta Chan",
-    role: "Housewife in China",
-    rating: 4.5,
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&auto=format&fit=crop"
-  },
-  {
-    id: 2,
-    text: "I've never felt more connected to my training stats. The AI insights are genuinely game-changing for my marathon prep.",
-    author: "Marcus Thorne",
-    role: "Pro Athlete, UK",
-    rating: 5.0,
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop"
-  },
-  {
-    id: 3,
-    text: "Granger isn't just an app, it's a lifestyle. The events are impeccably organized and the energy is unmatched.",
-    author: "Sarah Jenkins",
-    role: "Yoga Instructor",
-    rating: 5.0,
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format&fit=crop"
-  }
-];
+interface TestimonialsProps {
+    testimonials: TestimonialItem[];
+    sessions: SessionItem[];
+}
 
-const sessions = [
-  {
-    id: 1,
-    title: "Single Session",
-    subtitle: "Individualized Training - Beginner",
-    price: "$99",
-    image: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=1000&auto=format&fit=crop"
-  },
-  {
-    id: 2,
-    title: "Pro Camp",
-    subtitle: "Elite Performance Group",
-    price: "$149",
-    image: "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=1000&auto=format&fit=crop"
-  },
-  {
-    id: 3,
-    title: "Mind Body",
-    subtitle: "Holistic Wellness Retreat",
-    price: "$299",
-    image: "https://images.unsplash.com/photo-1599474924187-334a405be2ce?q=80&w=1000&auto=format&fit=crop"
-  }
-];
-
-export const Testimonials: React.FC = () => {
+export const Testimonials: React.FC<TestimonialsProps> = ({ testimonials, sessions }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHoverPaused, setIsHoverPaused] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
@@ -67,23 +23,35 @@ export const Testimonials: React.FC = () => {
   const authorRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const activeTestimonial = testimonials[activeIndex];
-  const activeSession = sessions[activeIndex % sessions.length];
+  useEffect(() => {
+    trackSectionView('Testimonials');
+  }, []);
+
+  // Safety checks
+  const safeTestimonials = testimonials.length > 0 ? testimonials : [{ id: 0, text: 'No testimonials', author: '', role: '', rating: 5, avatar: '' }];
+  const safeSessions = sessions.length > 0 ? sessions : [{ id: 0, title: 'No sessions', subtitle: '', price: '', image: '' }];
+
+  const activeTestimonial = safeTestimonials[activeIndex % safeTestimonials.length];
+  const activeSession = safeSessions[activeIndex % safeSessions.length];
 
   const handleNext = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % testimonials.length);
-  }, []);
+    setActiveIndex((prev) => (prev + 1) % safeTestimonials.length);
+    trackEvent('Testimonial Nav', { action: 'Next' });
+  }, [safeTestimonials.length]);
 
   const handlePrev = useCallback(() => {
-    setActiveIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-  }, []);
+    setActiveIndex((prev) => (prev - 1 + safeTestimonials.length) % safeTestimonials.length);
+    trackEvent('Testimonial Nav', { action: 'Prev' });
+  }, [safeTestimonials.length]);
 
   // Auto-play
   useEffect(() => {
     if (isHoverPaused) return;
-    const interval = setInterval(handleNext, 5000);
+    const interval = setInterval(() => {
+        setActiveIndex((prev) => (prev + 1) % safeTestimonials.length);
+    }, 5000);
     return () => clearInterval(interval);
-  }, [isHoverPaused, handleNext]);
+  }, [isHoverPaused, safeTestimonials.length]);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -221,11 +189,11 @@ export const Testimonials: React.FC = () => {
                   <div className="flex-1 h-[2px] bg-gray-100 dark:bg-zinc-800 relative ml-4 hidden md:block rounded-full overflow-hidden">
                       <div 
                         className="absolute top-0 left-0 h-full bg-brand-orange transition-all duration-700 ease-in-out"
-                        style={{ width: `${((activeIndex + 1) / testimonials.length) * 100}%` }}
+                        style={{ width: `${((activeIndex + 1) / safeTestimonials.length) * 100}%` }}
                       ></div>
                   </div>
                   <div className="md:hidden text-xs font-bold text-gray-400">
-                      {activeIndex + 1} / {testimonials.length}
+                      {activeIndex + 1} / {safeTestimonials.length}
                   </div>
               </div>
           </div>

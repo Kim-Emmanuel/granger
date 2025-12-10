@@ -4,18 +4,35 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Plus, Minus, Shirt, Utensils, Sparkles, Brain, Zap, ArrowRight } from 'lucide-react';
 import { getDailyChallenge } from '../services/geminiService';
+import { SaleItem } from '../types';
+import { trackEvent } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export const Features: React.FC = () => {
+interface FeaturesProps {
+    sales: SaleItem[];
+}
+
+export const Features: React.FC<FeaturesProps> = ({ sales }) => {
   const container = useRef<HTMLDivElement>(null);
   const [challenge, setChallenge] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("Coaching...");
   const rotateTween = useRef<gsap.core.Tween | null>(null);
 
+  // Use the first sale item or a fallback if empty
+  const activeSale = sales.length > 0 ? sales[0] : {
+    title: "February Sale",
+    image: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=1000&auto=format&fit=crop",
+    category: "Tennis Outdoor",
+    discount: "86%",
+    audience: "Member",
+    buttonText: "Boost"
+  };
+
   const handleGetChallenge = async () => {
     if (loading) return;
+    trackEvent('AI Interaction', { feature: 'Daily Challenge' });
     setLoading(true);
     // Reset challenge briefly to show generation is happening if re-clicking
     if (challenge) setChallenge(""); 
@@ -216,23 +233,23 @@ export const Features: React.FC = () => {
            <div className="h-full min-h-[500px] md:min-h-[600px] lg:min-h-0 relative rounded-[2.5rem] overflow-hidden group shadow-xl bg-brand-orange">
                <div className="absolute inset-0 transition-transform duration-700 hover:scale-105">
                  <img 
-                   src="https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=1000&auto=format&fit=crop" 
+                   src={activeSale.image} 
                    className="w-full h-full object-cover saturate-[1.2]"
-                   alt="Tennis Court"
+                   alt={activeSale.title}
                  />
                </div>
                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40"></div>
                
                <div className="absolute top-8 right-8 z-20">
                    <div className="bg-white/95 backdrop-blur px-4 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-wide text-brand-dark flex items-center gap-2 shadow-sm transform transition-transform group-hover:rotate-3">
-                       <div className="bg-brand-orange p-1 rounded-full text-white"><Shirt size={10} strokeWidth={3}/></div> February Sale
+                       <div className="bg-brand-orange p-1 rounded-full text-white"><Shirt size={10} strokeWidth={3}/></div> {activeSale.title}
                    </div>
                </div>
 
                <div className="absolute bottom-6 left-6 right-6 lg:bottom-8 lg:left-8 lg:right-8 z-20">
                    <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] p-6 lg:p-8 shadow-[0_20px_40px_rgba(0,0,0,0.2)]">
                        <div className="flex justify-between items-center mb-3">
-                           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tennis Outdoor</span>
+                           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{activeSale.category}</span>
                            <div className="flex gap-1.5">
                                <div className="w-2.5 h-2.5 rounded-full bg-brand-mint border border-white/20"></div>
                                <div className="w-2.5 h-2.5 rounded-full bg-brand-orange border border-white/20"></div>
@@ -241,12 +258,12 @@ export const Features: React.FC = () => {
                        
                        <div className="flex justify-between items-end">
                            <div className="flex items-baseline gap-2">
-                               <span className="text-4xl font-bold text-brand-dark tracking-tighter">86%</span>
-                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Member</span>
+                               <span className="text-4xl font-bold text-brand-dark tracking-tighter">{activeSale.discount}</span>
+                               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{activeSale.audience}</span>
                            </div>
                            
                            <button className="bg-brand-blue text-white px-5 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-wide flex items-center gap-2 shadow-lg shadow-brand-blue/30 hover:bg-brand-dark transition-colors">
-                               <Plus size={12} strokeWidth={3} /> Boost
+                               <Plus size={12} strokeWidth={3} /> {activeSale.buttonText}
                            </button>
                        </div>
                    </div>
