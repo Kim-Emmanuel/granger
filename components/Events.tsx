@@ -4,7 +4,7 @@ import { EventItem } from '../types';
 import { ArrowUpRight, Zap, MapPin, Ticket, ArrowRight, Trophy } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { trackEvent } from '../services/analyticsService';
+import { trackEvent, trackButtonClick } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,6 +28,7 @@ export const Events: React.FC<EventsProps> = ({ events }) => {
   const handleBookNow = (e: React.MouseEvent, event: EventItem) => {
       e.stopPropagation();
       trackEvent('Conversion', { type: 'Event Booking', event: event.title });
+      trackButtonClick('Book Now', 'Events');
       alert(`Booking initiated for ${event.title}`);
   }
 
@@ -82,7 +83,7 @@ export const Events: React.FC<EventsProps> = ({ events }) => {
   if (!activeEvent) return null;
 
   return (
-    <section ref={containerRef} className="px-4 md:px-10 mb-8 max-w-[1800px] mx-auto">
+    <section id="events" ref={containerRef} className="px-4 md:px-10 mb-8 max-w-[1800px] mx-auto">
       <div className="bg-[#0f0f11] text-white py-16 md:py-24 px-6 md:px-16 rounded-[2.5rem] overflow-hidden relative min-h-[auto] md:min-h-[900px]">
         
         {/* Decorative Background Elements */}
@@ -102,7 +103,10 @@ export const Events: React.FC<EventsProps> = ({ events }) => {
            </div>
            
            <div className="hidden lg:block pb-4">
-              <button className="w-24 h-24 rounded-full border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition-all duration-300 group">
+              <button 
+                onClick={() => trackButtonClick('View All Events', 'Events Header')}
+                className="w-24 h-24 rounded-full border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition-all duration-300 group"
+              >
                   <ArrowUpRight size={32} strokeWidth={1.5} className="group-hover:rotate-45 transition-transform duration-300"/>
               </button>
            </div>

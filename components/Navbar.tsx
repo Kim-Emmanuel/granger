@@ -6,10 +6,10 @@ import { gsap } from 'gsap';
 import { trackEvent } from '../services/analyticsService';
 
 const links: NavLink[] = [
-  { label: 'Program', href: '#' },
-  { label: 'Product', href: '#', isNew: true },
-  { label: 'Events', href: '#' },
-  { label: 'About', href: '#' },
+  { label: 'Program', href: '#program' },
+  { label: 'Product', href: '#product', isNew: true },
+  { label: 'Events', href: '#events' },
+  { label: 'About', href: '#about' },
 ];
 
 interface NavbarProps {
@@ -38,8 +38,14 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, onEnterAdmi
     }
   }, [isMenuOpen]);
 
-  const handleLinkClick = (label: string) => {
+  const handleLinkClick = (label: string, href?: string) => {
     trackEvent('Navigation Click', { label });
+    if (href && href.startsWith('#')) {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   }
 
   const handleThemeToggle = () => {
@@ -52,10 +58,15 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, onEnterAdmi
       <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/5 backdrop-blur-sm dark:bg-black/5 py-4' : 'bg-transparent py-6 md:py-8'} text-white mix-blend-difference pointer-events-none`}>
         <div className="max-w-[1800px] mx-auto px-6 md:px-10 w-full flex justify-between items-center">
             <div className="pointer-events-auto flex items-center gap-12 md:gap-16">
-            <div className="text-2xl md:text-3xl font-black tracking-tighter uppercase cursor-pointer select-none font-sans hover:scale-105 transition-transform origin-left" onClick={() => handleLinkClick('Logo')}>Granger</div>
+            <div 
+              className="text-2xl md:text-3xl font-black tracking-tighter uppercase cursor-pointer select-none font-sans hover:scale-105 transition-transform origin-left" 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              Granger
+            </div>
             <ul className="hidden md:flex gap-8 text-[11px] font-bold tracking-widest uppercase">
                 {links.map((link) => (
-                <li key={link.label} className="relative group cursor-pointer flex items-center" onClick={() => handleLinkClick(link.label)}>
+                <li key={link.label} className="relative group cursor-pointer flex items-center" onClick={() => handleLinkClick(link.label, link.href)}>
                     <span className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                     {link.label}
                     </span>
@@ -136,7 +147,11 @@ export const Navbar: React.FC<NavbarProps> = ({ isDark, toggleTheme, onEnterAdmi
               <a 
                 key={link.label} 
                 href={link.href} 
-                onClick={() => { setIsMenuOpen(false); handleLinkClick(link.label); }} 
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  setIsMenuOpen(false); 
+                  handleLinkClick(link.label, link.href); 
+                }} 
                 className="mobile-link text-3xl font-bold uppercase tracking-wide hover:text-brand-orange transition-colors flex items-center gap-3"
               >
                  {link.label}

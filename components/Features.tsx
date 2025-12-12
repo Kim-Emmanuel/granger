@@ -5,7 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Plus, Minus, Shirt, Utensils, Sparkles, Brain, Zap, ArrowRight } from 'lucide-react';
 import { getDailyChallenge } from '../services/geminiService';
 import { SaleItem } from '../types';
-import { trackEvent } from '../services/analyticsService';
+import { trackEvent, trackButtonClick } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -33,6 +33,7 @@ export const Features: React.FC<FeaturesProps> = ({ sales }) => {
   const handleGetChallenge = async () => {
     if (loading) return;
     trackEvent('AI Interaction', { feature: 'Daily Challenge' });
+    trackButtonClick('Generate Challenge', 'Features');
     setLoading(true);
     // Reset challenge briefly to show generation is happening if re-clicking
     if (challenge) setChallenge(""); 
@@ -90,7 +91,7 @@ export const Features: React.FC<FeaturesProps> = ({ sales }) => {
   }, []);
 
   return (
-    <section ref={container} className="w-full py-16 md:py-24 bg-[#f3f4f6] dark:bg-zinc-950 text-brand-dark dark:text-white transition-colors duration-300 relative z-20 overflow-hidden">
+    <section id="product" ref={container} className="w-full py-16 md:py-24 bg-[#f3f4f6] dark:bg-zinc-950 text-brand-dark dark:text-white transition-colors duration-300 relative z-20 overflow-hidden">
       
       {/* Unified Grid Layout: Mobile Stack -> Tablet 2-Col -> Desktop 12-Col */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 xl:gap-8 px-6 lg:px-10 max-w-[1800px] mx-auto">
@@ -115,10 +116,16 @@ export const Features: React.FC<FeaturesProps> = ({ sales }) => {
             
             {/* Pills */}
             <div className="flex flex-wrap gap-3 mb-8">
-               <button className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-zinc-900 border border-transparent dark:border-zinc-800 rounded-full text-[11px] font-bold uppercase tracking-wide hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-sm group">
+               <button 
+                onClick={() => trackButtonClick('Eating After Game', 'Features')}
+                className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-zinc-900 border border-transparent dark:border-zinc-800 rounded-full text-[11px] font-bold uppercase tracking-wide hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-sm group"
+               >
                  <Utensils size={14} className="group-hover:text-brand-orange transition-colors"/> Eating After the Game
                </button>
-               <button className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-zinc-900 border border-transparent dark:border-zinc-800 rounded-full text-[11px] font-bold uppercase tracking-wide hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-sm group">
+               <button 
+                onClick={() => trackButtonClick('Game Jersey', 'Features')}
+                className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-zinc-900 border border-transparent dark:border-zinc-800 rounded-full text-[11px] font-bold uppercase tracking-wide hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 shadow-sm group"
+               >
                  <Shirt size={14} className="group-hover:text-brand-orange transition-colors"/> Game Jersey
                </button>
             </div>
@@ -130,7 +137,10 @@ export const Features: React.FC<FeaturesProps> = ({ sales }) => {
              <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-8 shadow-sm border border-transparent dark:border-zinc-800 transition-transform duration-300 hover:-translate-y-1 h-full">
                  <div className="flex justify-between items-start mb-4">
                      <h4 className="font-bold text-lg text-brand-dark dark:text-white">Connections</h4>
-                     <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
+                     <button 
+                        onClick={() => trackButtonClick('Remove Connection', 'Features')}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                     >
                         <Minus size={16} className="text-gray-400"/>
                      </button>
                  </div>
@@ -140,7 +150,10 @@ export const Features: React.FC<FeaturesProps> = ({ sales }) => {
              </div>
              
              {/* Sport Package Strip */}
-             <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 px-8 flex justify-between items-center shadow-sm border border-transparent dark:border-zinc-800 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-zinc-800 group cursor-pointer h-full">
+             <div 
+                onClick={() => trackButtonClick('Add Sport Package', 'Features')}
+                className="bg-white dark:bg-zinc-900 rounded-[2rem] p-6 px-8 flex justify-between items-center shadow-sm border border-transparent dark:border-zinc-800 transition-all duration-300 hover:bg-gray-50 dark:hover:bg-zinc-800 group cursor-pointer h-full"
+             >
                  <h4 className="font-bold text-lg text-brand-dark dark:text-white">Sport Package</h4>
                  <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-black flex items-center justify-center text-brand-dark dark:text-white group-hover:bg-brand-orange group-hover:text-white transition-colors duration-300">
                     <Plus size={20} />
@@ -220,7 +233,10 @@ export const Features: React.FC<FeaturesProps> = ({ sales }) => {
                   <h3 className="text-3xl md:text-4xl font-medium leading-[1.05] mb-10 text-brand-dark dark:text-white tracking-tight">
                      Visionary <br/> Precision Play
                   </h3>
-                  <button className="w-full py-4 px-6 bg-brand-dark dark:bg-white text-white dark:text-brand-dark rounded-full flex items-center justify-between group/btn transition-all duration-300 hover:opacity-90 shadow-lg">
+                  <button 
+                    onClick={() => trackButtonClick('Join Now (Visionary)', 'Features')}
+                    className="w-full py-4 px-6 bg-brand-dark dark:bg-white text-white dark:text-brand-dark rounded-full flex items-center justify-between group/btn transition-all duration-300 hover:opacity-90 shadow-lg"
+                  >
                       <span className="text-[10px] font-bold uppercase tracking-widest">Join Now!</span>
                       <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform"/>
                   </button>
@@ -262,7 +278,10 @@ export const Features: React.FC<FeaturesProps> = ({ sales }) => {
                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{activeSale.audience}</span>
                            </div>
                            
-                           <button className="bg-brand-blue text-white px-5 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-wide flex items-center gap-2 shadow-lg shadow-brand-blue/30 hover:bg-brand-dark transition-colors">
+                           <button 
+                            onClick={() => trackButtonClick(`${activeSale.buttonText} (Sale)`, 'Features')}
+                            className="bg-brand-blue text-white px-5 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-wide flex items-center gap-2 shadow-lg shadow-brand-blue/30 hover:bg-brand-dark transition-colors"
+                           >
                                <Plus size={12} strokeWidth={3} /> {activeSale.buttonText}
                            </button>
                        </div>

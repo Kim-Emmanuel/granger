@@ -4,7 +4,7 @@ import { Star, ArrowUpRight, ArrowRight, Quote, ArrowLeft, Users } from 'lucide-
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { TestimonialItem, SessionItem } from '../types';
-import { trackSectionView, trackEvent } from '../services/analyticsService';
+import { trackSectionView, trackEvent, trackButtonClick } from '../services/analyticsService';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -213,7 +213,10 @@ export const Testimonials: React.FC<TestimonialsProps> = ({ testimonials, sessio
                          <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg">
                              Featured Session
                          </div>
-                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:bg-brand-orange hover:text-white transition-colors duration-300 shadow-xl">
+                         <div 
+                            onClick={() => trackButtonClick('Arrow Link', 'Session Card')}
+                            className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-black hover:bg-brand-orange hover:text-white transition-colors duration-300 shadow-xl"
+                         >
                              <ArrowUpRight size={20} />
                          </div>
                      </div>
@@ -227,7 +230,10 @@ export const Testimonials: React.FC<TestimonialsProps> = ({ testimonials, sessio
                              <div className="bg-white text-black px-4 py-2 rounded-full text-sm font-bold shadow-lg">
                                  {activeSession.price} <span className="text-[10px] font-normal opacity-70">/ session</span>
                              </div>
-                             <button className="flex-1 border border-white/30 hover:bg-brand-orange hover:border-brand-orange text-white py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex justify-center items-center gap-2 group/btn">
+                             <button 
+                                onClick={() => trackButtonClick('Full Game', 'Session Card')}
+                                className="flex-1 border border-white/30 hover:bg-brand-orange hover:border-brand-orange text-white py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg flex justify-center items-center gap-2 group/btn"
+                             >
                                  Full Game <ArrowUpRight size={12} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform"/>
                              </button>
                          </div>

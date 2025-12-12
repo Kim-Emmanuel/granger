@@ -1,8 +1,8 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { ProgramItem, EventItem, TestimonialItem, SessionItem, SaleItem } from '../types';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { ProgramItem, EventItem, TestimonialItem, SessionItem, SaleItem, AnalyticsEvent } from '../types';
 import { ProgramCard } from './ProgramCard';
-import { Plus, Trash2, Save, Layout, Search, ArrowLeft, Calendar, MessageSquare, Zap, Star, Upload, Sun, Moon, Image as ImageIcon, ChevronLeft, Eye, Edit3, ShoppingBag, Shirt, BarChart3, Users, Globe, Activity, Clock, PieChart, Layers } from 'lucide-react';
+import { Plus, Trash2, Save, Layout, Search, ArrowLeft, Calendar, MessageSquare, Zap, Star, Upload, Sun, Moon, Image as ImageIcon, ChevronLeft, Eye, Edit3, ShoppingBag, Shirt, BarChart3, Users, Globe, Activity, Clock, PieChart, Layers, MousePointer2, TrendingUp, Filter, X, AlertTriangle } from 'lucide-react';
 import { getAnalyticsData } from '../services/analyticsService';
 
 interface AdminDashboardProps {
@@ -149,10 +149,71 @@ const ImageInput = ({ label, value, onChange }: { label: string, value: string, 
     )
 }
 
+// Confirmation Modal Component
+const DeleteConfirmationModal = ({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  isDark 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onConfirm: () => void; 
+  isDark: boolean; 
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" 
+        onClick={onClose}
+      ></div>
+      
+      {/* Modal */}
+      <div className={`relative w-full max-w-md p-6 rounded-3xl shadow-2xl transform transition-all animate-in zoom-in-95 duration-200 ${isDark ? 'bg-zinc-900 border border-white/10' : 'bg-white border border-gray-100'}`}>
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-500 mb-2">
+            <AlertTriangle size={32} />
+          </div>
+          
+          <div>
+            <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>Delete Item?</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 px-4">
+              Are you sure you want to delete this item? This action is permanent and cannot be undone.
+            </p>
+          </div>
+
+          <div className="flex gap-3 w-full mt-4">
+            <button 
+              onClick={onClose}
+              className={`flex-1 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors ${isDark ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={onConfirm}
+              className="flex-1 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest bg-red-500 hover:bg-red-600 text-white transition-colors shadow-lg shadow-red-500/30 flex items-center justify-center gap-2"
+            >
+              <Trash2 size={14} /> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- ANALYTICS COMPONENT ---
 const AnalyticsView = ({ isDark }: { isDark: boolean }) => {
     const [data, setData] = useState(getAnalyticsData());
     
+    // Filtering States
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [logSearch, setLogSearch] = useState('');
+
     useEffect(() => {
         const interval = setInterval(() => {
             setData(getAnalyticsData());
@@ -160,24 +221,97 @@ const AnalyticsView = ({ isDark }: { isDark: boolean }) => {
         return () => clearInterval(interval);
     }, []);
 
-    const maxVisitors = Math.max(...data.dailyStats.map(d => d.visitors)) * 1.2;
+    // Filter Logic
+    const filteredDailyStats = useMemo(() => {
+        if (!startDate && !endDate) return data.dailyStats.slice(-7); // Default to last 7 days for view if no filter
+        
+        let start = startDate ? new Date(startDate) : new Date(0);
+        let end = endDate ? new Date(endDate) : new Date(); // End of time
+        
+        return data.dailyStats.filter(d => {
+            // d.date is "Mmm DD", assume current year for filtering logic if year missing
+            const currentYear = new Date().getFullYear();
+            const dateStr = `${d.date}, ${currentYear}`;
+            const dateObj = new Date(dateStr);
+            return dateObj >= start && dateObj <= end;
+        });
+    }, [data.dailyStats, startDate, endDate]);
+
+    const filteredLogs = useMemo(() => {
+        return data.recentEvents.filter(e => {
+            const matchesSearch = e.name.toLowerCase().includes(logSearch.toLowerCase()) || 
+                                  JSON.stringify(e.data || '').toLowerCase().includes(logSearch.toLowerCase());
+            
+            let matchesDate = true;
+            if (startDate || endDate) {
+                const eventDate = new Date(e.timestamp);
+                const start = startDate ? new Date(startDate) : new Date(0);
+                const end = endDate ? new Date(endDate) : new Date();
+                // Set end date to end of day
+                end.setHours(23, 59, 59, 999);
+                matchesDate = eventDate >= start && eventDate <= end;
+            }
+
+            return matchesSearch && matchesDate;
+        });
+    }, [data.recentEvents, logSearch, startDate, endDate]);
+
+    const maxVisitors = Math.max(...(filteredDailyStats.length ? filteredDailyStats : data.dailyStats).map(d => d.visitors)) * 1.2;
+
+    const clearFilters = () => {
+        setStartDate('');
+        setEndDate('');
+        setLogSearch('');
+    };
 
     return (
         <div className="p-4 md:p-8 overflow-y-auto h-full pb-20">
             <div className="max-w-7xl mx-auto space-y-8">
                 
-                {/* Header */}
-                <div className="flex justify-between items-end">
+                {/* Header & Controls */}
+                <div className="flex flex-col lg:flex-row justify-between items-end lg:items-center gap-6">
                     <div>
                         <h2 className={`text-2xl md:text-3xl font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-900'}`}>Analytics Overview</h2>
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Real-time performance metrics</p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Real-time performance & deep dive</p>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-mint/10 rounded-full border border-brand-mint/20">
-                         <span className="relative flex h-2 w-2">
-                            <span className="absolute inline-flex h-full w-full rounded-full bg-brand-mint opacity-75 animate-ping"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-mint"></span>
-                         </span>
-                         <span className="text-[10px] font-bold uppercase tracking-wide text-brand-mint">{data.realtime.activeUsers} Active Now</span>
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Live Indicator */}
+                        <div className="flex items-center gap-2 px-3 py-2 bg-brand-mint/10 rounded-lg border border-brand-mint/20 mr-2">
+                             <span className="relative flex h-2 w-2">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-brand-mint opacity-75 animate-ping"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-mint"></span>
+                             </span>
+                             <span className="text-[10px] font-bold uppercase tracking-wide text-brand-mint">{data.realtime.activeUsers} Active</span>
+                        </div>
+
+                        {/* Date Filters */}
+                        <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border ${isDark ? 'bg-zinc-900 border-white/10' : 'bg-white border-gray-200'}`}>
+                            <Calendar size={14} className="text-gray-400 ml-1" />
+                            <input 
+                                type="date" 
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className={`bg-transparent text-[10px] font-bold uppercase tracking-wide focus:outline-none ${isDark ? 'text-white' : 'text-slate-900'}`}
+                            />
+                            <span className="text-gray-400 text-xs">-</span>
+                            <input 
+                                type="date" 
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className={`bg-transparent text-[10px] font-bold uppercase tracking-wide focus:outline-none ${isDark ? 'text-white' : 'text-slate-900'}`}
+                            />
+                        </div>
+
+                        {(startDate || endDate || logSearch) && (
+                            <button 
+                                onClick={clearFilters}
+                                className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+                                title="Clear Filters"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -186,7 +320,7 @@ const AnalyticsView = ({ isDark }: { isDark: boolean }) => {
                     {[
                         { label: 'Total Visitors', value: data.totalStats.visitors, change: '+12%', icon: Users, color: 'text-blue-500' },
                         { label: 'Engagement Rate', value: '68%', change: '+5%', icon: Activity, color: 'text-brand-orange' },
-                        { label: 'Avg Session', value: data.totalStats.avgDuration, change: '-2%', icon: Clock, color: 'text-purple-500' },
+                        { label: 'Peak Day', value: data.peakDay.date, change: `${data.peakDay.visitors} Visits`, icon: TrendingUp, color: 'text-purple-500' },
                         { label: 'Bounce Rate', value: data.totalStats.bounceRate, change: '-4%', icon: ArrowLeft, color: 'text-red-500' },
                     ].map((stat, i) => (
                         <div key={i} className={`p-6 rounded-2xl border ${isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white border-gray-100'} shadow-sm`}>
@@ -194,7 +328,7 @@ const AnalyticsView = ({ isDark }: { isDark: boolean }) => {
                                 <div className={`p-2 rounded-lg bg-gray-100 dark:bg-white/5 ${stat.color}`}>
                                     <stat.icon size={20} />
                                 </div>
-                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${stat.change.startsWith('+') ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${stat.change.startsWith('-') ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400'}`}>
                                     {stat.change}
                                 </span>
                             </div>
@@ -210,56 +344,72 @@ const AnalyticsView = ({ isDark }: { isDark: boolean }) => {
                     {/* Traffic Chart */}
                     <div className={`lg:col-span-2 p-6 rounded-3xl border ${isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white border-gray-100'} shadow-sm`}>
                         <div className="flex justify-between items-center mb-8">
-                             <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>Weekly Traffic</h3>
-                             <button className="text-xs font-bold text-gray-500 hover:text-brand-orange uppercase tracking-wide">View Report</button>
+                             <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>Daily Visitors</h3>
+                             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                {filteredDailyStats.length} Days Showing
+                             </div>
                         </div>
                         
                         <div className="h-64 w-full relative">
-                            {/* Simple SVG Line Chart */}
-                            <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                {/* Grid Lines */}
-                                {[0, 25, 50, 75, 100].map(y => (
-                                    <line key={y} x1="0" y1={y} x2="100" y2={y} stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="0.5" />
-                                ))}
-                                
-                                {/* Bars (for visitors) */}
-                                {data.dailyStats.map((d, i) => {
-                                    const height = (d.visitors / maxVisitors) * 100;
-                                    const x = (i / (data.dailyStats.length - 1)) * 100;
-                                    return (
-                                        <g key={i}>
-                                            <rect 
-                                                x={x - 2} 
-                                                y={100 - height} 
-                                                width="4" 
-                                                height={height} 
-                                                className="fill-brand-orange opacity-20 hover:opacity-40 transition-opacity cursor-pointer" 
-                                                rx="2"
-                                            />
-                                        </g>
-                                    );
-                                })}
+                            {filteredDailyStats.length > 0 ? (
+                                <>
+                                    {/* Simple SVG Line Chart */}
+                                    <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                        {/* Grid Lines */}
+                                        {[0, 25, 50, 75, 100].map(y => (
+                                            <line key={y} x1="0" y1={y} x2="100" y2={y} stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} strokeWidth="0.5" />
+                                        ))}
+                                        
+                                        {/* Bars (for visitors) */}
+                                        {filteredDailyStats.map((d, i) => {
+                                            const height = (d.visitors / maxVisitors) * 100;
+                                            // Ensure width is distributed evenly based on array length
+                                            const width = 100 / filteredDailyStats.length;
+                                            const x = i * width;
+                                            return (
+                                                <g key={i}>
+                                                    <rect 
+                                                        x={x + (width * 0.2)} // Center in slot with padding
+                                                        y={100 - height} 
+                                                        width={Math.max(2, width * 0.6)} 
+                                                        height={height} 
+                                                        className="fill-brand-orange opacity-20 hover:opacity-40 transition-opacity cursor-pointer" 
+                                                        rx="2"
+                                                    />
+                                                </g>
+                                            );
+                                        })}
 
-                                {/* Line (for pageviews - just mocking a line here for visual) */}
-                                <polyline 
-                                    points={data.dailyStats.map((d, i) => `${(i / (data.dailyStats.length - 1)) * 100},${100 - ((d.pageViews / (maxVisitors * 2)) * 100)}`).join(' ')}
-                                    fill="none"
-                                    stroke="#4aa5d6"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            
-                            {/* X-Axis Labels */}
-                            <div className="flex justify-between mt-4">
-                                {data.dailyStats.map((d, i) => (
-                                    <span key={i} className="text-[9px] font-bold uppercase text-gray-400">{d.date}</span>
-                                ))}
-                            </div>
+                                        {/* Line (for pageviews) */}
+                                        <polyline 
+                                            points={filteredDailyStats.map((d, i) => {
+                                                const width = 100 / filteredDailyStats.length;
+                                                const x = (i * width) + (width * 0.5);
+                                                return `${x},${100 - ((d.pageViews / (maxVisitors * 2)) * 100)}`;
+                                            }).join(' ')}
+                                            fill="none"
+                                            stroke="#4aa5d6"
+                                            strokeWidth="1.5"
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                    
+                                    {/* X-Axis Labels */}
+                                    <div className="flex justify-between mt-4">
+                                        {filteredDailyStats.filter((_, i) => i % Math.ceil(filteredDailyStats.length / 6) === 0).map((d, i) => (
+                                            <span key={i} className="text-[9px] font-bold uppercase text-gray-400">{d.date}</span>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-gray-500 text-xs font-bold uppercase tracking-widest">
+                                    No Data in Range
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Section Engagement - New Component */}
+                    {/* Section Engagement */}
                     <div className={`p-6 rounded-3xl border ${isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white border-gray-100'} shadow-sm flex flex-col`}>
                         <div className="flex items-center gap-2 mb-6">
                             <Layers size={18} className="text-gray-400"/>
@@ -289,56 +439,75 @@ const AnalyticsView = ({ isDark }: { isDark: boolean }) => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                     {/* Geo Stats */}
+                     {/* Top Interactions */}
                     <div className={`p-6 rounded-3xl border ${isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white border-gray-100'} shadow-sm flex flex-col`}>
                         <div className="flex items-center gap-2 mb-6">
-                            <Globe size={18} className="text-gray-400"/>
-                            <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>Top Locations</h3>
+                            <MousePointer2 size={18} className="text-gray-400"/>
+                            <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>Top Interactions</h3>
                         </div>
                         
-                        <div className="flex-1 space-y-5">
-                            {data.geoStats.map((geo, i) => (
-                                <div key={i}>
-                                    <div className="flex justify-between text-xs font-bold mb-1.5">
-                                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{geo.country}</span>
-                                        <span className="text-gray-500">{geo.percentage}%</span>
+                        <div className="flex-1 space-y-4">
+                            {data.topButtons.map((btn, i) => (
+                                <div key={i} className={`flex items-center justify-between p-3 rounded-xl border ${isDark ? 'border-white/5 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
+                                    <div className="flex flex-col">
+                                        <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{btn.label}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{btn.location}</span>
                                     </div>
-                                    <div className="w-full h-1.5 bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-brand-blue rounded-full" 
-                                            style={{ width: `${geo.percentage}%` }}
-                                        ></div>
-                                    </div>
+                                    <span className="text-xl font-black text-brand-orange">{btn.count}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Live Events Log */}
-                    <div className={`lg:col-span-2 rounded-3xl border overflow-hidden ${isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white border-gray-100'} shadow-sm`}>
-                        <div className={`p-6 border-b ${isDark ? 'border-white/10' : 'border-gray-100'} flex justify-between items-center`}>
-                            <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>Live Event Log</h3>
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-brand-mint animate-pulse">● Monitoring</span>
+                    <div className={`lg:col-span-2 rounded-3xl border overflow-hidden ${isDark ? 'bg-zinc-900/50 border-white/10' : 'bg-white border-gray-100'} shadow-sm flex flex-col`}>
+                        <div className={`p-6 border-b ${isDark ? 'border-white/10' : 'border-gray-100'} flex flex-col md:flex-row justify-between items-start md:items-center gap-4`}>
+                            <div className="flex items-center gap-4">
+                                <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-slate-900'}`}>Live Event Log</h3>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-brand-mint animate-pulse hidden sm:block">● Monitoring</span>
+                            </div>
+                            
+                            {/* Search Bar for Log */}
+                            <div className="relative w-full md:w-64">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search events, data..." 
+                                    value={logSearch}
+                                    onChange={(e) => setLogSearch(e.target.value)}
+                                    className={`w-full pl-9 pr-3 py-2 rounded-lg text-xs font-bold border focus:outline-none focus:border-brand-orange transition-colors ${isDark ? 'bg-black/20 border-white/10 text-white' : 'bg-gray-50 border-gray-200 text-slate-900'}`}
+                                />
+                            </div>
                         </div>
-                        <div className="max-h-80 overflow-y-auto p-2">
+                        <div className="flex-1 overflow-y-auto p-2 min-h-[300px]">
                             <table className="w-full text-left border-collapse">
                                 <thead className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                                     <tr>
                                         <th className="p-4">Event Name</th>
-                                        <th className="p-4">Metadata</th>
+                                        <th className="p-4">Metadata / Loc</th>
                                         <th className="p-4 text-right">Time</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-sm">
-                                    {data.recentEvents.length > 0 ? data.recentEvents.map((e) => (
+                                    {filteredLogs.length > 0 ? filteredLogs.map((e) => (
                                         <tr key={e.id} className={`border-b border-dashed last:border-0 ${isDark ? 'border-white/5 hover:bg-white/5' : 'border-gray-100 hover:bg-gray-50'} transition-colors`}>
                                             <td className={`p-4 font-medium ${isDark ? 'text-gray-300' : 'text-slate-700'}`}>{e.name}</td>
-                                            <td className="p-4 text-xs font-mono text-gray-500 truncate max-w-[200px]">{JSON.stringify(e.data) || '-'}</td>
-                                            <td className="p-4 text-right text-xs text-gray-500">{new Date(e.timestamp).toLocaleTimeString()}</td>
+                                            <td className="p-4">
+                                                <div className="text-xs font-mono text-gray-500 truncate max-w-[200px]">
+                                                    {JSON.stringify(e.data) || '-'}
+                                                </div>
+                                                {/* Display precise location if available in data */}
+                                                {e.data?.lat && e.data?.long && (
+                                                    <div className="text-[9px] text-brand-blue font-bold uppercase tracking-widest mt-1 flex items-center gap-1">
+                                                        <Globe size={10} /> {e.data.lat}, {e.data.long}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="p-4 text-right text-xs text-gray-500 whitespace-nowrap">{new Date(e.timestamp).toLocaleTimeString()}</td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={3} className="p-8 text-center text-gray-500 text-xs uppercase tracking-widest">No events tracked yet...</td>
+                                            <td colSpan={3} className="p-8 text-center text-gray-500 text-xs uppercase tracking-widest">No matching events...</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -364,6 +533,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editItem, setEditItem] = useState<any>(null);
+  
+  // Confirmation Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   
   // Mobile View Logic: 'list' is default. 'editor' shows when item selected.
   const [mobileView, setMobileView] = useState<MobileView>('list');
@@ -422,16 +595,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setMobileView('editor');
   };
 
+  // Trigger Delete Modal
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      const newList = getList().filter((p: any) => p.id !== id);
-      updateList(newList);
-      if (selectedId === id) {
-        setSelectedId(null);
-        setEditItem(null);
-        setMobileView('list');
+    setItemToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  // Confirm and Execute Delete
+  const confirmDelete = () => {
+      if (itemToDelete !== null) {
+          const list = getList();
+          const newList = list.filter((p: any) => p.id !== itemToDelete);
+          updateList(newList);
+          
+          if (selectedId === itemToDelete) {
+              setSelectedId(null);
+              setEditItem(null);
+              setMobileView('list');
+          }
+          
+          setDeleteModalOpen(false);
+          setItemToDelete(null);
       }
-    }
   };
 
   const updateList = (newList: any[]) => {
@@ -859,6 +1044,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal 
+        isOpen={deleteModalOpen} 
+        onClose={() => setDeleteModalOpen(false)} 
+        onConfirm={confirmDelete}
+        isDark={isDark}
+      />
+
       <style>{`
           .no-scrollbar::-webkit-scrollbar {
             display: none;

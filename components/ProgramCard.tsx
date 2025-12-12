@@ -2,6 +2,7 @@
 import React from 'react';
 import { ProgramItem } from '../types';
 import { ArrowRight, Trophy, Zap, Sparkles, Users, MapPin } from 'lucide-react';
+import { trackButtonClick } from '../services/analyticsService';
 
 interface ProgramCardProps {
   item: ProgramItem;
@@ -83,7 +84,10 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ item, className = "" }
                   )}
                   {item.live && "Live Now"}
                 </div>
-                <button className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-brand-dark bg-white px-5 py-2.5 md:px-6 md:py-3 rounded-full hover:bg-gray-200 transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] group/btn">
+                <button 
+                    onClick={() => trackButtonClick(item.buttonText || 'Explore', 'Program Card')}
+                    className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-brand-dark bg-white px-5 py-2.5 md:px-6 md:py-3 rounded-full hover:bg-gray-200 transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] group/btn"
+                >
                   {item.buttonText || 'Explore'}{" "}
                   <ArrowRight
                     size={14}
@@ -97,7 +101,10 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({ item, className = "" }
       )}
 
       {item.style === "image" && (
-        <div className="rounded-[2rem] md:rounded-[2.5rem] h-full relative overflow-hidden cursor-pointer bg-gray-900 transition-transform duration-500 hover:-translate-y-2 shadow-2xl border border-transparent dark:border-white/5">
+        <div 
+            onClick={() => trackButtonClick(`Card Click: ${item.title}`, 'Program Card')}
+            className="rounded-[2rem] md:rounded-[2.5rem] h-full relative overflow-hidden cursor-pointer bg-gray-900 transition-transform duration-500 hover:-translate-y-2 shadow-2xl border border-transparent dark:border-white/5"
+        >
           <img
             src={item.image}
             className="absolute inset-0 w-full h-full object-cover transition-all duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"

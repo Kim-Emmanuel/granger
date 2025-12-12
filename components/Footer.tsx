@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
   }
 
   return (
-    <footer ref={container} className="bg-[#f3f4f6] dark:bg-zinc-950 pt-24 pb-8 px-6 md:px-10 transition-colors duration-300">
+    <footer id="about" ref={container} className="bg-[#f3f4f6] dark:bg-zinc-950 pt-24 pb-8 px-6 md:px-10 transition-colors duration-300">
        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-24">
           <div className="md:col-span-5">
              <div onClick={() => handleLinkClick('Explore Card')} className="relative rounded-4xl overflow-hidden aspect-square md:aspect-[4/3] bg-gray-900 group cursor-pointer shadow-2xl">

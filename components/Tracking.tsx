@@ -1,11 +1,12 @@
 
 import React, { useState, useLayoutEffect, useRef, useEffect } from 'react';
 import { ActivityStat } from '../types';
-import { getFitnessAdvice } from '../services/geminiService';
-import { Activity, Flame, Heart, Zap, Sparkles, ArrowRight, Dumbbell } from 'lucide-react';
+import { getFitnessAdvice, createCoachChat } from '../services/geminiService';
+import { Activity, Flame, Heart, Zap, Sparkles, ArrowRight, Dumbbell, MessageSquare, X, Send, Bot, User } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { trackSectionView, trackEvent } from '../services/analyticsService';
+import { trackSectionView, trackEvent, trackButtonClick } from '../services/analyticsService';
+import { Chat } from "@google/genai";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -15,9 +16,24 @@ const stats: ActivityStat[] = [
   { label: 'Workout', value: 249, unit: 'Cal', color: 'bg-brand-mint' },
 ];
 
+interface ChatMessage {
+    role: 'user' | 'model';
+    text: string;
+}
+
 export const Tracking: React.FC = () => {
   const [advice, setAdvice] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  
+  // Chat State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const chatSessionRef = useRef<Chat | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatModalRef = useRef<HTMLDivElement>(null);
+
   const sectionRef = useRef<HTMLElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -26,6 +42,13 @@ export const Tracking: React.FC = () => {
   useEffect(() => {
     trackSectionView('Tracking');
   }, []);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isTyping]);
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -86,16 +109,71 @@ export const Tracking: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
+  // Chat Animations
+  useEffect(() => {
+    if (isChatOpen && chatModalRef.current) {
+        gsap.fromTo(chatModalRef.current, 
+            { opacity: 0, y: 50, scale: 0.95 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.2)" }
+        );
+    }
+  }, [isChatOpen]);
+
   const handleGetAdvice = async () => {
     trackEvent('AI Advice', { action: 'Generate' });
+    trackButtonClick('Generate Insight', 'Tracking');
     setLoading(true);
     const result = await getFitnessAdvice(stats);
     setAdvice(result);
     setLoading(false);
   };
 
+  const initChat = async () => {
+    if (!chatSessionRef.current) {
+        try {
+            chatSessionRef.current = createCoachChat(stats);
+            setIsTyping(true);
+            // Send hidden prompt to jumpstart conversation
+            const response = await chatSessionRef.current.sendMessage({ message: "Introduce yourself briefly based on my stats and ask me what I want to tackle today." });
+            setChatMessages([{ role: 'model', text: response.text || "Ready to train?" }]);
+            setIsTyping(false);
+        } catch (error) {
+            console.error(error);
+            setChatMessages([{ role: 'model', text: "Connection error. Coach is offline." }]);
+            setIsTyping(false);
+        }
+    }
+  };
+
+  const handleOpenChat = () => {
+      setIsChatOpen(true);
+      trackEvent('Chat Coach', { action: 'Open' });
+      if (chatMessages.length === 0) {
+          initChat();
+      }
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (!inputMessage.trim() || !chatSessionRef.current) return;
+
+      const userMsg = inputMessage;
+      setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+      setInputMessage('');
+      setIsTyping(true);
+
+      try {
+          const result = await chatSessionRef.current.sendMessage({ message: userMsg });
+          setChatMessages(prev => [...prev, { role: 'model', text: result.text || "Keep going." }]);
+      } catch (error) {
+          setChatMessages(prev => [...prev, { role: 'model', text: "Error communicating with coach." }]);
+      } finally {
+          setIsTyping(false);
+      }
+  };
+
   return (
-    <section ref={sectionRef} className="py-16 md:py-24 px-6 md:px-10 bg-white dark:bg-brand-dark transition-colors duration-300 overflow-hidden">
+    <section ref={sectionRef} className="py-16 md:py-24 px-6 md:px-10 bg-white dark:bg-brand-dark transition-colors duration-300 overflow-hidden relative">
       <div className="max-w-[1800px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center">
         
         {/* Left: Image & Card Overlay */}
@@ -195,7 +273,10 @@ export const Tracking: React.FC = () => {
                 { icon: Dumbbell, label: 'Workout' }
               ].map((item, i) => (
                  <div key={i} className="group relative">
-                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-full border border-gray-200 dark:border-zinc-800 flex items-center justify-center hover:bg-black hover:text-white hover:border-black dark:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 cursor-pointer shadow-sm">
+                    <div 
+                        onClick={() => trackButtonClick(`Stat Icon: ${item.label}`, 'Tracking')}
+                        className="w-12 h-12 md:w-14 md:h-14 rounded-full border border-gray-200 dark:border-zinc-800 flex items-center justify-center hover:bg-black hover:text-white hover:border-black dark:text-white dark:hover:bg-white dark:hover:text-black transition-all duration-300 cursor-pointer shadow-sm"
+                    >
                       <item.icon size={20} />
                     </div>
                     <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black text-white px-2 py-1 rounded">
@@ -214,7 +295,10 @@ export const Tracking: React.FC = () => {
             </div>
 
            <div className="flex items-center gap-6">
-               <button className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-brand-orange flex items-center justify-center text-white shadow-xl shadow-brand-orange/30 hover:scale-110 transition-transform duration-300 group">
+               <button 
+                onClick={() => trackButtonClick('Explore More', 'Tracking')}
+                className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-brand-orange flex items-center justify-center text-white shadow-xl shadow-brand-orange/30 hover:scale-110 transition-transform duration-300 group"
+               >
                    <ArrowRight size={24} className="-rotate-45 group-hover:rotate-0 transition-transform"/>
                </button>
                <div className="text-xs font-bold uppercase tracking-widest text-gray-500 cursor-pointer hover:text-black dark:hover:text-white transition-colors">
@@ -228,27 +312,138 @@ export const Tracking: React.FC = () => {
              <div className="relative z-10">
                <div className="flex items-center gap-2 mb-4">
                   <Sparkles size={14} className="text-brand-blue animate-pulse" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-blue">AI Coach</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-blue">AI Coach G</span>
                </div>
                
                <p className="text-sm font-medium text-brand-dark dark:text-gray-300 mb-6 italic min-h-[3rem] leading-relaxed">
                  {loading ? "Analyzing your stats..." : (advice ? `"${advice}"` : "Get personalized motivation based on your current stats.")}
                </p>
 
-               <button 
-                  onClick={handleGetAdvice}
-                  disabled={loading}
-                  className="w-full bg-brand-dark dark:bg-white text-white dark:text-brand-dark py-3 rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-md disabled:opacity-50 flex justify-center items-center gap-2"
-               >
-                   {loading ? <span className="animate-spin rounded-full h-3 w-3 border-2 border-white/20 border-t-white"></span> : <Zap size={14} fill="currentColor"/>}
-                  {loading ? 'Thinking...' : 'Generate Insight'}
-               </button>
+               <div className="flex gap-2">
+                    <button 
+                        onClick={handleGetAdvice}
+                        disabled={loading}
+                        className="flex-1 bg-white/50 dark:bg-white/10 hover:bg-brand-dark hover:text-white dark:hover:bg-white dark:hover:text-brand-dark py-3 rounded-xl text-xs font-bold transition-all shadow-sm border border-transparent dark:border-white/10 flex justify-center items-center gap-2"
+                    >
+                        {loading ? <span className="animate-spin rounded-full h-3 w-3 border-2 border-current border-t-transparent"></span> : <Zap size={14} />}
+                        Quick Tip
+                    </button>
+                    <button 
+                        onClick={handleOpenChat}
+                        className="flex-1 bg-brand-dark dark:bg-white text-white dark:text-brand-dark py-3 rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-md flex justify-center items-center gap-2"
+                    >
+                        <MessageSquare size={14} /> Chat Coach
+                    </button>
+               </div>
              </div>
            </div>
            
         </div>
 
       </div>
+
+      {/* CHAT MODAL OVERLAY */}
+      {isChatOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div 
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" 
+                onClick={() => setIsChatOpen(false)}
+            ></div>
+
+            {/* Modal */}
+            <div 
+                ref={chatModalRef}
+                className="relative w-full max-w-md bg-white dark:bg-[#1a1a1c] rounded-[2rem] shadow-2xl border border-white/20 dark:border-white/10 overflow-hidden flex flex-col max-h-[80vh]"
+            >
+                {/* Header */}
+                <div className="p-5 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-black/20 backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-brand-blue flex items-center justify-center text-white shadow-lg shadow-brand-blue/30 relative">
+                            <Bot size={20} />
+                            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-[#1a1a1c] rounded-full"></span>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-sm text-brand-dark dark:text-white">Coach G</h3>
+                            <div className="text-[10px] font-bold text-brand-blue uppercase tracking-widest">Elite Performance AI</div>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setIsChatOpen(false)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
+                    >
+                        <X size={20} className="text-gray-500" />
+                    </button>
+                </div>
+
+                {/* Chat Body */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50 dark:bg-[#0f0f11] min-h-[300px]">
+                    {chatMessages.length === 0 && isTyping && (
+                         <div className="flex justify-center mt-10">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">Initializing Session...</span>
+                         </div>
+                    )}
+                    
+                    {chatMessages.map((msg, idx) => (
+                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            {msg.role === 'model' && (
+                                <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center mr-2 mt-1 shrink-0">
+                                    <Bot size={14} className="text-brand-blue"/>
+                                </div>
+                            )}
+                            <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${
+                                msg.role === 'user' 
+                                ? 'bg-brand-orange text-white rounded-br-none shadow-lg shadow-brand-orange/20' 
+                                : 'bg-white dark:bg-white/5 text-gray-700 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-white/5'
+                            }`}>
+                                {msg.text}
+                            </div>
+                            {msg.role === 'user' && (
+                                <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center ml-2 mt-1 shrink-0">
+                                    <User size={14} className="text-brand-orange"/>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+
+                    {isTyping && chatMessages.length > 0 && (
+                        <div className="flex justify-start">
+                             <div className="w-8 h-8 rounded-full bg-brand-blue/10 flex items-center justify-center mr-2 shrink-0">
+                                    <Bot size={14} className="text-brand-blue"/>
+                             </div>
+                             <div className="bg-white dark:bg-white/5 px-4 py-3 rounded-2xl rounded-bl-none border border-gray-100 dark:border-white/5 flex gap-1">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-100"></span>
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-200"></span>
+                             </div>
+                        </div>
+                    )}
+                    <div ref={chatEndRef}></div>
+                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-[#1a1a1c] border-t border-gray-100 dark:border-white/5">
+                    <div className="relative flex items-center">
+                        <input 
+                            type="text" 
+                            value={inputMessage}
+                            onChange={(e) => setInputMessage(e.target.value)}
+                            placeholder="Ask about your stats..." 
+                            className="w-full bg-gray-100 dark:bg-black/30 border border-transparent focus:bg-white dark:focus:bg-black/50 focus:border-brand-blue rounded-full py-3.5 pl-5 pr-12 text-sm outline-none transition-all dark:text-white"
+                        />
+                        <button 
+                            type="submit"
+                            disabled={!inputMessage.trim() || isTyping}
+                            className="absolute right-2 p-2 bg-brand-dark dark:bg-white text-white dark:text-brand-dark rounded-full hover:scale-105 disabled:opacity-50 disabled:scale-100 transition-all shadow-md"
+                        >
+                            <Send size={16} className={isTyping ? "opacity-0" : "opacity-100"} />
+                            {isTyping && <div className="absolute inset-0 m-auto w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
     </section>
   );
 };

@@ -217,6 +217,7 @@ export const Program: FC<ProgramProps> = ({ programs }) => {
 
 	return (
 		<section
+            id="program"
 			ref={container}
 			className="bg-white dark:bg-zinc-950 transition-colors duration-500 overflow-hidden relative z-10"
 		>

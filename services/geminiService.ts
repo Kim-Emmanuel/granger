@@ -1,4 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
+
+import { GoogleGenAI, Chat } from "@google/genai";
 import { ActivityStat } from "../types";
 
 const apiKey = process.env.API_KEY || '';
@@ -42,4 +43,28 @@ export const getDailyChallenge = async (): Promise<string> => {
     console.error("Gemini Error:", error);
     return "Complete 50 pushups now.";
   }
+};
+
+export const createCoachChat = (stats: ActivityStat[]): Chat => {
+  if (!apiKey) throw new Error("API Key missing");
+  
+  const statsContext = stats.map(s => `${s.label}: ${s.value} ${s.unit}`).join(', ');
+  
+  return ai.chats.create({
+    model: 'gemini-2.5-flash',
+    config: {
+      systemInstruction: `You are Coach G, a world-class elite sports performance trainer. 
+      
+      USER CONTEXT (Live Stats):
+      ${statsContext}
+      
+      YOUR ROLE:
+      - Analyze the provided stats to give specific, data-driven advice.
+      - Tone: High-energy, professional, slightly aggressive but highly motivating (tough love).
+      - Keep responses concise (under 40 words) for a chat interface, unless the user asks for a detailed plan.
+      - Use emojis sparingly (🔥, 💪, ⚡️) to emphasize power.
+      - If the user is slacking (low stats), push them. If they are doing well, challenge them to go further.
+      `,
+    }
+  });
 };

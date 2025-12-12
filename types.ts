@@ -94,3 +94,10 @@ export interface SectionEngagement {
   views: number;
   percentage: number;
 }
+
+export interface ButtonAnalytics {
+  id: string;
+  label: string;
+  location: string;
+  count: number;
+}
